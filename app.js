@@ -75,7 +75,7 @@ app.get('/campgrounds/:id/edit', async (req, res) => {
 app.put('/campgrounds/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const campground = await Campground.findByIdAndUpdate(id, { ...req.body.campground });
+        const campground = await Campground.findByIdAndUpdate(id, { ...req.body.campground });  //...--> spread operator
         res.redirect(`/campgrounds/${campground._id}`);
     } catch (err) {
         console.error(err);
@@ -83,6 +83,17 @@ app.put('/campgrounds/:id', async (req, res) => {
     }  
 }); 
 
+
+app.delete('/campgrounds/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await campgrounds.findByIdAndDelete(id);
+        res.redirect('/campgrounds');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error deleting campground');
+    }
+});
 
 app.listen(3000, () => {
     console.log('Server running on port 3000');
