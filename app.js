@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const path = require('path');
 const mongoose = require('mongoose');
+const methodOverride = require('method-override');
 const Campground = require('./models/campground');
 
 mongoose.connect('mongodb://localhost:27017/yelp-camp');
@@ -16,18 +17,72 @@ db.once("open", () => {
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+app.use(express.urlencoded({extended: true}));
+app.use(methodOverride('_method'));
+
 app.get('/', (req, res) => {
     res.render('home');
 });
 
 app.get('/campgrounds', async (req, res) => {
-    const campgrounds = await Campground.find({});
-    res.render('campgrounds/index', { campgrounds });
+    try {
+        const campgrounds = await Campground.find({});
+        res.render('campgrounds/index', { campgrounds });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error loading campgrounds');
+    }
+});
+
+app.get('/campgrounds/new',(req,res)=>{
+    res.render('campgrounds/new');
+});
+
+app.post('/campgrounds', async (req, res) => {
+    try {
+        const campground = new Campground(req.body.campground);
+        await campground.save();
+        res.redirect(`/campgrounds/${campground._id}`);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error creating campground');
+    }
 });
 
 app.get('/campgrounds/:id',async(req,res)=>{
-    res.send()
+    try {
+        const campground = await Campground.findById(req.params.id);
+        if (!campground) {
+            return res.status(404).send('Campground not found');
+        }
+        res.render('campgrounds/show', { campground });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error loading campground');
+    }
 })
+
+app.get('/campgrounds/:id/edit', async (req, res) => {
+    try {
+        const campground = await Campground.findById(req.params.id);
+        res.render('campgrounds/edit', { campground });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error loading campground');
+    }
+});
+
+app.put('/campgrounds/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const campground = await Campground.findByIdAndUpdate(id, { ...req.body.campground });
+        res.redirect(`/campgrounds/${campground._id}`);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error updating campground');
+    }  
+}); 
+
 
 app.listen(3000, () => {
     console.log('Server running on port 3000');
